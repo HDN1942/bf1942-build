@@ -1,3 +1,3 @@
 [submodule "bf1942-modding-scripts"]
-	path = bf1942-modding-scripts
+	path = tasks/bf1942-modding-scripts
 	url = git@github.com:HDN1942/bf1942-modding-scripts.git

@@ -20,6 +20,11 @@ def check_config(c):
     if c.mod.base_path.exists() is False:
         raise FileNotFoundError(f'mod.base "{c.mod.base}" does not exist')
 
+    scripts_path = Path(__file__).parent / 'bf1942-modding-scripts'
+    c.scripts = {
+        'pack': scripts_path / 'pack.py'
+    }
+
 @task
 def make_directories(c):
     c.build_path = c.project_root / c.build_dir
@@ -76,6 +81,6 @@ def build(c):
             shutil.rmtree(level_pack)
         level_pack.mkdir(parents=True, exist_ok=True)
 
-        c.run(f'python3 ./bf1942-modding-scripts/pack.py {level_work} {level_pack} -b bf1942/levels/{level_name}')
+        c.run(f'python3 {c.scripts.pack} {level_work} {level_pack} -b bf1942/levels/{level_name}')
 
         # TODO copy biks from parent mod where missing

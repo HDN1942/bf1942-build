@@ -8,7 +8,7 @@ ns.add_task(build)
 ns.add_task(deploy)
 
 ns.configure({
-    'project_root': '..',
+    'project_root': '',
     'build_dir': 'build',
     'bf1942': {
         'path': 'C:\\Program Files (x86)\\EA Games\\Battlefield 1942'
