@@ -20,13 +20,19 @@ pip3 install -r requirements.txt
 
 #### Including in a mod git repository
 
-`git submodule add git@github.com:HDN1942/bf1942-build.git tasks`
+`git submodule add git@github.com:HDN1942/bf1942-build.git`
+
+`inv -r bf1942-build --list`
+
+Alternatively create a symlink (junction on Windows) to simplfy the inv command:
+
+`ln -s ./bf1942-build/tasks tasks`
 
 `inv --list`
 
 #### Local testing
 
-`inv -c __init__ -f ./test/invoke.yaml --list`
+`inv -f ./test/invoke.yaml --list`
 
 ## License
 
