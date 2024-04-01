@@ -24,6 +24,10 @@ pip3 install -r requirements.txt
 
 `inv --list`
 
+#### Local testing
+
+`inv -c __init__ -f ./test/invoke.yaml --list`
+
 ## License
 
 Released under GPL-3.0 license unless specified otherwise in source file.

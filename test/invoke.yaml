@@ -1,0 +1,3 @@
+project_root: './test'
+bf1942:
+  path: './test/bf1942'
