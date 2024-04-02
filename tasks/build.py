@@ -2,6 +2,7 @@ import re
 import shutil
 from invoke import task
 from pathlib import Path
+from .sync import sync_dirs
 
 TOP_LEVEL_RFAS = set([
     'ai',
@@ -53,6 +54,7 @@ def make_directories(c):
 
 @task
 def gen_mod_init(c):
+    # TODO don't generate if src/init.con exists
     mod_path_re = re.compile('^game\.addModPath', re.IGNORECASE)
     bik_re = re.compile("^game\.\w+Filename.+\.bik", re.IGNORECASE)
 
@@ -81,22 +83,6 @@ def gen_mod_init(c):
         for line in biks:
             init.write(line + '\n')
 
-def sync_dirs(src, dst):
-    src_path = Path(src)
-    dst_path = Path(dst)
-
-    changed = False
-
-    for src_file in [f for f in src_path.rglob('*') if f.is_file()]:
-        dst_file = dst_path / src_file.relative_to(src)
-
-        dst_file.parent.mkdir(parents=True, exist_ok=True)
-        if not dst_file.exists() or src_file.stat().st_mtime > dst_file.stat().st_mtime:
-            shutil.copyfile(src_file, dst_file)
-            changed = True
-
-    return changed
-
 def pack_rfa(c, src, rfa):
     src_path = Path(src)
     rfa_path = Path(rfa)
@@ -113,7 +99,6 @@ def pack_rfa(c, src, rfa):
             rfa_file_path.unlink()
 
         c.run(f'python3 {c.scripts.pack} {work_path} {pack_path} -b {base_path}')
-
 
 @task()
 def pack_rfas(c):

@@ -1,6 +1,6 @@
 from invoke import Collection, task
-from tasks.build import build, clean
-from tasks.deploy import deploy
+from .build import build, clean
+from .deploy import deploy
 
 ns = Collection()
 
@@ -12,6 +12,7 @@ ns.configure({
     'project_root': '',
     'build_dir': 'build',
     'bf1942': {
+        # TODO what's the actual default install path on Windows?
         'path': 'C:\\Program Files (x86)\\EA Games\\Battlefield 1942'
     },
     'mod': {
