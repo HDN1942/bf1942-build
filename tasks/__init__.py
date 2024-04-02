@@ -1,10 +1,11 @@
 from invoke import Collection, task
-from tasks.build import build
+from tasks.build import build, clean
 from tasks.deploy import deploy
 
 ns = Collection()
 
 ns.add_task(build)
+ns.add_task(clean)
 ns.add_task(deploy)
 
 ns.configure({

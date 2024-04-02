@@ -81,25 +81,39 @@ def gen_mod_init(c):
         for line in biks:
             init.write(line + '\n')
 
+def sync_dirs(src, dst):
+    src_path = Path(src)
+    dst_path = Path(dst)
+
+    changed = False
+
+    for src_file in [f for f in src_path.rglob('*') if f.is_file()]:
+        dst_file = dst_path / src_file.relative_to(src)
+
+        dst_file.parent.mkdir(parents=True, exist_ok=True)
+        if not dst_file.exists() or src_file.stat().st_mtime > dst_file.stat().st_mtime:
+            shutil.copyfile(src_file, dst_file)
+            changed = True
+
+    return changed
+
 def pack_rfa(c, src, rfa):
     src_path = Path(src)
     rfa_path = Path(rfa)
 
     base_path = c.build_path / 'src'
     work_path = base_path / rfa_path
-    pack_path = c.pack_path / 'Archives' / rfa_path.parent
-    file_path = pack_path / f'{rfa_path.name}.rfa'
 
-    # TODO copy changed files only and build only if changed
-    if work_path.exists():
-        shutil.rmtree(work_path)
-    shutil.copytree(src_path, work_path)
+    if sync_dirs(src_path, work_path):
+        pack_path = c.pack_path / 'Archives' / rfa_path.parent
+        pack_path.mkdir(parents=True, exist_ok=True)
 
-    if file_path.exists():
-        file_path.unlink()
-    pack_path.mkdir(parents=True, exist_ok=True)
+        rfa_file_path = pack_path / f'{rfa_path.name}.rfa'
+        if rfa_file_path.exists():
+            rfa_file_path.unlink()
 
-    c.run(f'python3 {c.scripts.pack} {work_path} {pack_path} -b {base_path}')
+        c.run(f'python3 {c.scripts.pack} {work_path} {pack_path} -b {base_path}')
+
 
 @task()
 def pack_rfas(c):
@@ -121,3 +135,9 @@ def pack_rfas(c):
 def build(c):
     return
     # TODO copy biks from parent mod where missing
+
+@task(prepare_config)
+def clean(c):
+    c.build_path = c.project_root / c.build_dir
+    if c.build_path.exists():
+        shutil.rmtree(c.build_path)
