@@ -3,8 +3,26 @@ import shutil
 from invoke import task
 from pathlib import Path
 
+TOP_LEVEL_RFAS = set([
+    'ai',
+    'aiMeshes',
+    'animations',
+    'font',
+    'menu',
+    'objects',
+    'shaders',
+    'sound',
+    'standardMesh',
+    'texture',
+    'treeMesh'
+])
+
+BF1942_LEVEL_RFAS = set([
+    'game'
+])
+
 @task
-def check_config(c):
+def prepare_config(c):
     if c.mod.name == 'BF1942':
         raise ValueError('mod.name cannot be BF1942')
 
@@ -63,24 +81,43 @@ def gen_mod_init(c):
         for line in biks:
             init.write(line + '\n')
 
-@task(check_config, make_directories, gen_mod_init)
+def pack_rfa(c, src, rfa):
+    src_path = Path(src)
+    rfa_path = Path(rfa)
+
+    base_path = c.build_path / 'src'
+    work_path = base_path / rfa_path
+    pack_path = c.pack_path / 'Archives' / rfa_path.parent
+    file_path = pack_path / f'{rfa_path.name}.rfa'
+
+    # TODO copy changed files only and build only if changed
+    if work_path.exists():
+        shutil.rmtree(work_path)
+    shutil.copytree(src_path, work_path)
+
+    if file_path.exists():
+        file_path.unlink()
+    pack_path.mkdir(parents=True, exist_ok=True)
+
+    c.run(f'python3 {c.scripts.pack} {work_path} {pack_path} -b {base_path}')
+
+@task()
+def pack_rfas(c):
+    src_path = c.project_root / 'src'
+    top_rfas = [d for d in src_path.iterdir() if d.is_dir() and d.name in TOP_LEVEL_RFAS]
+    for src in top_rfas:
+        pack_rfa(c, src, Path(src.name))
+
+    bf1942_path = src_path / 'bf1942'
+    bf1942_rfas = [d for d in bf1942_path.iterdir() if d.is_dir() and d.name in BF1942_LEVEL_RFAS]
+    for src in bf1942_rfas:
+        pack_rfa(c, src, Path('bf1942', src.name))
+
+    levels_path = bf1942_path / 'levels'
+    for src in [d for d in levels_path.iterdir() if d.is_dir()]:
+        pack_rfa(c, src, Path('bf1942', 'levels', src.name))
+
+@task(prepare_config, make_directories, gen_mod_init, pack_rfas)
 def build(c):
-    levels_path = c.project_root / 'src' / 'bf1942' / 'levels'
-
-    for level_src in levels_path.iterdir():
-        level_name = level_src.name
-        level_work = c.build_path / 'src' / 'bf1942' / 'levels' / level_name
-        level_pack = c.pack_path / 'Archives' / 'bf1942' / 'levels'
-
-        # TODO copy changed files only and build only if changed
-        if level_work.exists():
-            shutil.rmtree(level_work)
-        shutil.copytree(level_src, level_work)
-
-        if level_pack.exists():
-            shutil.rmtree(level_pack)
-        level_pack.mkdir(parents=True, exist_ok=True)
-
-        c.run(f'python3 {c.scripts.pack} {level_work} {level_pack} -b bf1942/levels/{level_name}')
-
-        # TODO copy biks from parent mod where missing
+    return
+    # TODO copy biks from parent mod where missing
