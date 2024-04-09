@@ -1,1 +1,2 @@
 invoke==2.2.0
+python-ffmpeg=2.0.10

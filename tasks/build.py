@@ -1,5 +1,6 @@
 import re
 import shutil
+from ffmpeg import FFmpeg
 from invoke import task
 from pathlib import Path
 from .config import prepare_config
@@ -64,6 +65,45 @@ def gen_mod_init(c):
         for line in biks:
             init.write(line + '\n')
 
+@task
+def convert_files(c):
+    sound_path = c.project_root / 'src' / 'sound'
+    dst_path = c.build_path / 'src' / 'sound'
+    d11_path = dst_path / '11khz'
+    d22_path = dst_path / '22khz'
+    d44_path = dst_path / '44kHz'
+
+    d11_path.mkdir(parents=True, exist_ok=True)
+    d22_path.mkdir(parents=True, exist_ok=True)
+    d44_path.mkdir(parents=True, exist_ok=True)
+
+    for src_file in [f for f in sound_path.rglob('*') if f.is_file()]:
+        parts = Path(*src_file.relative_to(sound_path))
+        file_name = f'{src_file.stem}.wav'
+
+        d11_file = d11_path / parts / '11khz' / file_name
+        d22_file = d22_path / parts / '22khz' / file_name
+        d44_file = d44_path / parts / '44kHz' / file_name
+
+        ffmpeg = (
+            FFmpeg()
+            .option('y')
+            .input('input.mp4')
+            .output(
+                d11_file,
+                acodec='pcm_s16le',
+                ar=11025
+            )
+        )
+        # 44100
+        # 22050
+        # 11025
+
+        # ffmpeg -i sample.mp3 -acodec pcm_s16le -ar 44100 sample.wav
+
+    ffmpeg.execute()
+
+
 def pack_rfa(c, src, rfa):
     src_path = Path(src)
     rfa_path = Path(rfa)
@@ -97,7 +137,7 @@ def pack_rfas(c):
     for src in [d for d in levels_path.iterdir() if d.is_dir()]:
         pack_rfa(c, src, Path('bf1942', 'levels', src.name))
 
-@task(prepare_config, make_directories, gen_mod_init, pack_rfas)
+@task(prepare_config, make_directories, gen_mod_init, convert_files, pack_rfas)
 def build(c):
     return
     # TODO copy biks from parent mod where missing
