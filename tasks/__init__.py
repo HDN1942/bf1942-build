@@ -1,12 +1,14 @@
 from invoke import Collection, task
 from .build import build, clean
 from .deploy import deploy
+from .launch import launch
 
 ns = Collection()
 
 ns.add_task(build)
 ns.add_task(clean)
 ns.add_task(deploy)
+ns.add_task(launch)
 
 ns.configure({
     'project_root': '',
@@ -17,8 +19,12 @@ ns.configure({
     },
     'mod': {
         'name': 'MyMod',
-        'base': 'BF1942',
+        'base': 'bf1942',
         'version': '0.1.0',
         'url': 'https://example.net'
+    },
+    'linux': {
+        'wine_path': 'wine',
+        'wine_prefix': ''
     }
 })

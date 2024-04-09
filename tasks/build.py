@@ -2,6 +2,7 @@ import re
 import shutil
 from invoke import task
 from pathlib import Path
+from .config import prepare_config
 from .sync import sync_dirs
 
 TOP_LEVEL_RFAS = set([
@@ -21,28 +22,6 @@ TOP_LEVEL_RFAS = set([
 BF1942_LEVEL_RFAS = set([
     'game'
 ])
-
-@task
-def prepare_config(c):
-    if c.mod.name == 'BF1942':
-        raise ValueError('mod.name cannot be BF1942')
-
-    c.project_root = Path(c.project_root)
-    if c.project_root.exists() is False:
-        raise FileNotFoundError(f'project_root "{c.project_root}" does not exist')
-
-    c.bf1942.path = Path(c.bf1942.path)
-    if c.bf1942.path.exists() is False:
-        raise FileNotFoundError(f'bf1942.path "{c.bf1942.path}" does not exist')
-
-    c.mod.base_path = c.bf1942.path / 'Mods' / c.mod.base
-    if c.mod.base_path.exists() is False:
-        raise FileNotFoundError(f'mod.base "{c.mod.base}" does not exist')
-
-    scripts_path = Path(__file__).parent / 'bf1942-modding-scripts'
-    c.scripts = {
-        'pack': scripts_path / 'pack.py'
-    }
 
 @task
 def make_directories(c):
@@ -76,6 +55,8 @@ def gen_mod_init(c):
             init.write(line + '\n')
 
         init.write(f'game.setCustomGameVersion {c.mod.version}\n')
+        # TODO this always causes an error in the logs, is it needed?
+        # maybe only in retail build? can confirm? check bins?
         init.write(f'game.customGameFlushArchives 0\n')
         init.write(f'game.setCustomGameUrl "{c.mod.url}"\n')
         init.write('\n')
