@@ -1,3 +1,4 @@
+import re
 from ffmpeg import FFmpeg
 from invoke import task
 from pathlib import Path
@@ -23,41 +24,73 @@ def run_ffmpeg(src, dst, rate):
     )
     ffmpeg.execute()
 
+def get_sound_path(path):
+    sound_path_re = re.compile('^sound(?:_\d{3})?$', re.IGNORECASE)
+
+    if sound_path_re.match(path.name) is not None:
+        sound_path = path
+    else:
+        sound_path = path / 'sound'
+
+    if sound_path.exists() and sound_path.is_dir():
+        return sound_path
+    else:
+        return None
+
+def sounds_to_convert(path):
+    for file in [f for f in path.rglob('*') if f.is_file()]:
+        top = file.relative_to(path).parts[0]
+        if str(top).lower() in ['11khz', '22khz', '44khz']:
+            continue
+
+        yield file
+
 def should_process(target):
     '''Process sounds if target has a sound directory containing files/directories other than 11khz/22khz/44khz.'''
 
-    sound_path = target.src_path / 'sound'
-    if sound_path.exists() and sound_path.is_dir():
-        # TODO sound_path contains something other than the BF1942 sound dirs
+    sound_path = get_sound_path(target.work_path)
+    if sound_path is None:
+        return False
+
+    for file in sounds_to_convert(sound_path):
         return True
 
     return False
 
+# TODO async in threads?
 @task
 def process(c, target):
     '''Convert sounds to BF1942 supported wave format.'''
 
-    # TODO config to disable generating 11/22 khz sounds
-    d11_path = target.process_path / '11khz'
-    d22_path = target.process_path / '22khz'
-    d44_path = target.process_path / '44kHz'
+    sound_path = get_sound_path(target.process_path)
+    sounds = []
+    for file in sounds_to_convert(sound_path):
+        parts = Path(*file.relative_to(sound_path).parent.parts)
+        file_name = f'{file.stem}.wav'
+        sounds.append((file, parts, file_name))
 
-    d11_path.mkdir(parents=True, exist_ok=True)
-    d22_path.mkdir(parents=True, exist_ok=True)
+    d44_path = sound_path / '44kHz'
     d44_path.mkdir(parents=True, exist_ok=True)
 
-    # TODO async in threads?
-    # TODO skip converted files (under 11/22/44khz dirs)
-    for src_file in [f for f in target.process_path.rglob('*') if f.is_file()]:
-        parts = Path(*src_file.relative_to(target.process_path).parents)
-        file_name = f'{src_file.stem}.wav'
-
-        d11_file = d11_path / parts / file_name
-        d22_file = d22_path / parts / file_name
+    for file, parts, file_name in sounds:
         d44_file = d44_path / parts / file_name
+        run_ffmpeg(file, d44_file, RATE_44KHZ)
 
-        run_ffmpeg(src_file, d11_file, RATE_11KHZ)
-        run_ffmpeg(src_file, d22_file, RATE_22KHZ)
-        run_ffmpeg(src_file, d44_file, RATE_44KHZ)
+    if c.processors.sound.generate_22khz:
+        d22_path = sound_path / '22khz'
+        d22_path.mkdir(parents=True, exist_ok=True)
 
-        src_file.unlink()
+        for file, parts, file_name in sounds:
+            d22_file = d22_path / parts / file_name
+            run_ffmpeg(file, d22_file, RATE_22KHZ)
+
+    if c.processors.sound.generate_11khz:
+        d11_path = sound_path / '11khz'
+        d11_path.mkdir(parents=True, exist_ok=True)
+
+        for file, parts, file_name in sounds:
+            d11_file = d11_path / parts / file_name
+            run_ffmpeg(file, d11_file, RATE_11KHZ)
+
+    for file, parts, file_name in sounds:
+        file.unlink()

@@ -26,5 +26,11 @@ ns.configure({
     'linux': {
         'wine_path': 'wine',
         'wine_prefix': ''
+    },
+    'processors': {
+        'sound': {
+            'generate_11khz': True,
+            'generate_22khz': True
+        }
     }
 })
