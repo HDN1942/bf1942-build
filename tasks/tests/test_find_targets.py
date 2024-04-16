@@ -39,6 +39,7 @@ class FindTargetsTest(unittest.TestCase):
 
         self.c = MockContext({
             'project_root': self.root,
+            'src_path': self.root / 'src',
             'build_path': self.root / 'build',
             'pack_path': self.root / 'pack'
         })

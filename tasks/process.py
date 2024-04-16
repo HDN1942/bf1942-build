@@ -20,9 +20,8 @@ def should_process(target):
 @task
 def process_files(c):
     for target in [t for t in c.build.targets if not t.up_to_date and should_process(t)]:
-        sync_dirs(target.work_path, target.process_path)
+        target.setup_for_process()
 
         for processor in PROCESSORS:
             processor(c, target)
 
-        target.processed = True

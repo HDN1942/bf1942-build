@@ -11,6 +11,10 @@ def prepare_config(c):
     if c.project_root.exists() is False:
         raise FileNotFoundError(f'project_root "{c.project_root}" does not exist')
 
+    c.src_path = c.project_root / 'src'
+    if c.src_path.exists() is False:
+        raise FileNotFoundError(f'"{c.src_path}" does not exist under project_root')
+
     c.bf1942.path = Path(c.bf1942.path)
     if c.bf1942.path.exists() is False:
         raise FileNotFoundError(f'bf1942.path "{c.bf1942.path}" does not exist')

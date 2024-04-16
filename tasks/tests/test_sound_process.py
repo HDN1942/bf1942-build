@@ -3,7 +3,7 @@ import tasks.tests.util as testutil
 from invoke import MockContext
 from pathlib import Path
 from unittest.mock import patch, call
-from tasks.build import BuildTarget
+from tasks.buildtarget import BuildTarget
 from tasks.sound import RATE_11KHZ, RATE_22KHZ, RATE_44KHZ, process
 
 class SoundProcessTest(unittest.TestCase):
@@ -11,35 +11,48 @@ class SoundProcessTest(unittest.TestCase):
         testutil.remove_dummy_files(self)
 
         self.root = testutil.create_dummy_files({
+            'src': {
+                'sound': {},
+                'notsound': {}
+            },
             'build': {
-                'process': {
+                'src': {
                     'sound': {
-                        'dir1': {
-                            'dir2': {
-                                'foo.wav': None
-                            }
-                        },
-                        '44khz': {
-                            'bar.wav': None
-                        }
-                    },
-                    'not_sound': {
                         'sound': {
                             'dir1': {
                                 'dir2': {
-                                    'baz.wav': None
+                                    'foo.wav': None
                                 }
                             },
                             '44khz': {
-                                'bat.wav': None
+                                'bar.wav': None
+                            }
+                        },
+                    },
+                    'notsound': {
+                        'notsound': {
+                            'sound': {
+                                'dir1': {
+                                    'dir2': {
+                                        'baz.wav': None
+                                    }
+                                },
+                                '44khz': {
+                                    'bat.wav': None
+                                }
                             }
                         }
                     }
-                }
+                },
+                'process': {}
             }
         })
 
         self.c = MockContext({
+            'project_root': self.root,
+            'src_path': self.root / 'src',
+            'build_path': self.root / 'build',
+            'pack_path': self.root / 'pack',
             'processors': {
                 'sound': {
                     'generate_11khz': True,
@@ -47,19 +60,22 @@ class SoundProcessTest(unittest.TestCase):
                 }
             }
         })
-        self.sound = BuildTarget(self.root / 'build', self.root / 'pack', self.root / 'src' / 'sound', 'sound')
-        self.not_sound = BuildTarget(self.root / 'build', self.root / 'pack', self.root / 'src' / 'not_sound', 'not_sound')
+
+        self.sound = BuildTarget(self.c, 'sound')
+        self.notsound = BuildTarget(self.c, 'notsound')
 
     def tearDown(self):
         testutil.remove_dummy_files(self)
 
     @patch('tasks.sound.run_ffmpeg')
     def test_converts_unconverted_sound_files_in_sound(self, run_ffmpeg_mock):
+        self.sound.setup_for_process()
+
         process(self.c, self.sound)
 
         self.assertEqual(run_ffmpeg_mock.call_count, 3)
 
-        top = self.root / 'build' / 'process' / 'sound'
+        top = self.root / 'build' / 'process' / 'sound' / 'sound'
         rel = Path('dir1') / 'dir2' / 'foo.wav'
         original = top / rel
 
@@ -83,11 +99,13 @@ class SoundProcessTest(unittest.TestCase):
 
     @patch('tasks.sound.run_ffmpeg')
     def test_converts_unconverted_sound_files_in_sound_under_root(self, run_ffmpeg_mock):
-        process(self.c, self.not_sound)
+        self.notsound.setup_for_process()
+
+        process(self.c, self.notsound)
 
         self.assertEqual(run_ffmpeg_mock.call_count, 3)
 
-        top = self.root / 'build' / 'process' / 'not_sound' / 'sound'
+        top = self.root / 'build' / 'process' / 'notsound' / 'notsound' / 'sound'
         rel = Path('dir1') / 'dir2' / 'baz.wav'
         original = top / rel
 

@@ -62,7 +62,7 @@ def should_process(target):
 def process(c, target):
     '''Convert sounds to BF1942 supported wave format.'''
 
-    sound_path = get_sound_path(target.process_path)
+    sound_path = get_sound_path(target.work_path)
     sounds = []
     for file in sounds_to_convert(sound_path):
         parts = Path(*file.relative_to(sound_path).parent.parts)

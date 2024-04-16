@@ -1,6 +1,7 @@
 import unittest
 import tasks.tests.util as testutil
-from tasks.build import BuildTarget
+from invoke import MockContext
+from tasks.buildtarget import BuildTarget
 from tasks.sound import should_process
 
 class SoundShouldProcessTest(unittest.TestCase):
@@ -8,18 +9,27 @@ class SoundShouldProcessTest(unittest.TestCase):
         testutil.remove_dummy_files(self)
 
         self.root = testutil.create_dummy_files({
+            'src': {
+                'sound': {},
+                'notsound': {}
+            },
             'build': {
                 'src': {
-                    'sound': {}
+                    'sound': {},
+                    'notsound': {}
                 }
-            },
-            'src': {
-                'sound': {}
             }
         })
 
-        self.sound = BuildTarget(self.root / 'build', self.root / 'pack', self.root / 'src' / 'sound', 'sound')
-        self.not_sound = BuildTarget(self.root / 'build', self.root / 'pack', self.root / 'src' / 'not_sound', 'not_sound')
+        self.c = MockContext({
+            'project_root': self.root,
+            'src_path': self.root / 'src',
+            'build_path': self.root / 'build',
+            'pack_path': self.root / 'pack'
+        })
+
+        self.sound = BuildTarget(self.c, 'sound')
+        self.notsound = BuildTarget(self.c, 'notsound')
 
     def tearDown(self):
         testutil.remove_dummy_files(self)
@@ -29,9 +39,11 @@ class SoundShouldProcessTest(unittest.TestCase):
             'build': {
                 'src': {
                     'sound': {
-                        'dir1': {
-                            'dir2': {
-                                'foo.wav': None
+                        'sound': {
+                            'dir1': {
+                                'dir2': {
+                                    'foo.wav': None
+                                }
                             }
                         }
                     }
@@ -48,10 +60,12 @@ class SoundShouldProcessTest(unittest.TestCase):
             'build': {
                 'src': {
                     'sound': {
-                        '44khz': {
-                            'foo.wav': None,
-                            'dir1': {
-                                'bar.wav': None
+                        'sound': {
+                            '44khz': {
+                                'foo.wav': None,
+                                'dir1': {
+                                    'bar.wav': None
+                                }
                             }
                         }
                     }
@@ -67,47 +81,8 @@ class SoundShouldProcessTest(unittest.TestCase):
         self.root = testutil.create_dummy_files({
             'build': {
                 'src': {
-                    'not_sound': {
-                        'sound': {
-                            'baz.con': None
-                        }
-                    }
-                }
-            }
-        })
-
-        result = should_process(self.not_sound)
-
-        self.assertTrue(result)
-
-    def test_top_sound_directory_with_converted_files_returns_false(self):
-        self.root = testutil.create_dummy_files({
-            'build': {
-                'src': {
-                    'not_sound': {
-                        'sound': {
-                            '44khz': {
-                                'foo.wav': None,
-                                'dir1': {
-                                    'bar.wav': None
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        })
-
-        result = should_process(self.not_sound)
-
-        self.assertFalse(result)
-
-    def test_no_root_or_top_sound_directory_returns_false(self):
-        self.root = testutil.create_dummy_files({
-            'build': {
-                'src': {
-                    'not_sound': {
-                        'also_not_sound': {
+                    'notsound': {
+                        'notsound': {
                             'sound': {
                                 'baz.con': None
                             }
@@ -117,7 +92,52 @@ class SoundShouldProcessTest(unittest.TestCase):
             }
         })
 
-        result = should_process(self.not_sound)
+        result = should_process(self.notsound)
+
+        self.assertTrue(result)
+
+    def test_top_sound_directory_with_converted_files_returns_false(self):
+        self.root = testutil.create_dummy_files({
+            'build': {
+                'src': {
+                    'notsound': {
+                        'notsound': {
+                            'sound': {
+                                '44khz': {
+                                    'foo.wav': None,
+                                    'dir1': {
+                                        'bar.wav': None
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        result = should_process(self.notsound)
+
+        self.assertFalse(result)
+
+    def test_no_root_or_top_sound_directory_returns_false(self):
+        self.root = testutil.create_dummy_files({
+            'build': {
+                'src': {
+                    'notsound': {
+                        'notsound': {
+                            'also_notsound': {
+                                'sound': {
+                                    'baz.con': None
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        })
+
+        result = should_process(self.notsound)
 
         self.assertFalse(result)
 

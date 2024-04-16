@@ -2,9 +2,9 @@ import re
 import shutil
 from invoke import task
 from pathlib import Path
+from tasks.buildtarget import BuildTarget
 from tasks.config import prepare_config
 from tasks.process import process_files
-from tasks.sync import sync_dirs
 
 TOP_LEVEL_RFAS = set([
     'ai',
@@ -30,21 +30,6 @@ BF1942_EXTENDABLE_RFAS = set([
     'standardMesh',
     'texture'
 ])
-
-class BuildTarget:
-    def __init__(self, build_path, pack_path, src, base):
-        self.src_path = Path(src)
-        self.name = self.src_path.name
-        self.base_path = Path(base)
-        self.work_path = build_path / 'src' / self.base_path
-        self.process_path = build_path / 'process' / self.base_path
-        self.pack_path = pack_path / 'Archives' / self.base_path.parent
-        self.rfa_path = self.pack_path / f'{self.name}.rfa'
-        self.up_to_date = None
-        self.processed = False
-
-    def sync(self):
-        self.up_to_date = not sync_dirs(self.src_path, self.work_path)
 
 @task
 def make_directories(c):
@@ -99,19 +84,18 @@ def top_level_rfas(path):
 def find_targets(c):
     targets = []
 
-    src_path = c.project_root / 'src'
-    top_rfas = top_level_rfas(src_path)
-    for src in top_rfas:
-        targets.append(BuildTarget(c.build_path, c.pack_path, src, src.name))
+    top_rfas = top_level_rfas(c.src_path)
+    for directory in top_rfas:
+        targets.append(BuildTarget(c, directory.relative_to(c.src_path)))
 
-    bf1942_path = src_path / 'bf1942'
+    bf1942_path = c.src_path / 'bf1942'
     bf1942_rfas = [d for d in bf1942_path.iterdir() if d.is_dir() and d.name in BF1942_LEVEL_RFAS]
     for src in bf1942_rfas:
-        targets.append(BuildTarget(c.build_path, c.pack_path, src, Path('bf1942', src.name)))
+        targets.append(BuildTarget(c, directory.relative_to(c.src_path)))
 
     levels_path = bf1942_path / 'levels'
     for src in [d for d in levels_path.iterdir() if d.is_dir()]:
-        targets.append(BuildTarget(c.build_path, c.pack_path, src, Path('bf1942', 'levels', src.name)))
+        targets.append(BuildTarget(c, directory.relative_to(c.src_path)))
 
     c.build = { 'targets': targets }
 
@@ -123,15 +107,12 @@ def sync_targets(c):
 @task()
 def pack_rfas(c):
     for target in [t for t in c.build.targets if not t.up_to_date]:
-        target.pack_path.mkdir(parents=True, exist_ok=True)
+        target.rfa_file.parent.mkdir(parents=True, exist_ok=True)
 
-        if target.rfa_path.exists():
-            target.rfa_path.unlink()
+        if target.rfa_file.exists():
+            target.rfa_file.unlink()
 
-        work_base = c.build_path / 'process' if target.processed else c.build_path / 'src'
-        src_path = target.process_path if target.processed else target.work_path
-
-        c.run(f'python3 {c.scripts.pack} {src_path} {target.pack_path} -b {work_base}')
+        c.run(f'python3 {c.scripts.pack} {target.work_path} {target.rfa_file} -b {target.work_base_path}')
 
 # src -> build/src -> build/process (optional) -> build/pack
 # 1. sync changes from src to build/src
