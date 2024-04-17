@@ -1,6 +1,9 @@
+import logging
 import shutil
 from invoke import task, config
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 def sync_dirs(src, dst):
     '''Sync files from src to dst directory and return True if there were any changes.'''
@@ -15,6 +18,7 @@ def sync_dirs(src, dst):
 
         dst_file.parent.mkdir(parents=True, exist_ok=True)
         if not dst_file.exists() or src_file.stat().st_mtime > dst_file.stat().st_mtime:
+            logger.debug(f'copy {src_file} to {dst_file}')
             shutil.copyfile(src_file, dst_file)
             changed = True
 
@@ -22,14 +26,21 @@ def sync_dirs(src, dst):
         src_file = src_path / dst_file.relative_to(dst)
 
         if not src_file.exists():
+            logger.debug(f'{src_file} does not exist, delete "{dst_file}"')
             dst_file.unlink()
             changed = True
 
             # delete directory if empty and any empty parent directories
             parent = dst_file.parent
             while parent.is_dir() and len(list(parent.iterdir())) == 0:
+                logger.debug(f'{parent} directory is empty, remove')
                 parent.rmdir()
                 parent = parent.parent
+
+    if changed:
+        logger.debug(f'"{src}" has changed')
+    else:
+        logger.debug(f'"{src}" has not changed')
 
     return changed
 

@@ -1,4 +1,7 @@
+import logging
 import platform
+
+logger = logging.getLogger(__name__)
 
 def run_bf1942(c, args, debug=True):
     exe_path = 'BF1942_r.exe' if debug is True else 'BF1942.exe'
@@ -10,6 +13,8 @@ def run_bf1942(c, args, debug=True):
 
         if len(c.linux.wine_prefix) > 0:
             env['WINE_PREFIX'] = c.linux.wine_prefix
+
+    logger.debug(f'Battlefield 1942 command: {cmd}')
 
     with c.cd(c.bf1942.path):
         c.run(cmd)

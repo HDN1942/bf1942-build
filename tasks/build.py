@@ -1,3 +1,4 @@
+import logging
 import re
 import shutil
 from invoke import task
@@ -5,6 +6,8 @@ from pathlib import Path
 from tasks.buildtarget import BuildTarget
 from tasks.config import prepare_config
 from tasks.process import process_files
+
+logger = logging.getLogger(__name__)
 
 TOP_LEVEL_RFAS = set([
     'ai',
@@ -34,14 +37,22 @@ BF1942_EXTENDABLE_RFAS = set([
 @task
 def make_directories(c):
     c.build_path = c.project_root / c.build_dir
-    c.build_path.mkdir(exist_ok=True)
-
     c.pack_path = c.build_path / 'pack'
-    c.pack_path.mkdir(exist_ok=True)
+
+    if not c.build_path.exists():
+        logger.debug(f'create build directory {c.build_path}')
+        c.build_path.mkdir()
+
+    if not c.pack_path.exists():
+        logger.debug(f'create pack directory {c.pack_path}')
+        c.pack_path.mkdir()
 
 @task
 def gen_mod_init(c):
     # TODO don't generate if src/init.con exists
+
+    logger.info(f'generate mod init.con')
+
     mod_path_re = re.compile('^game\.addModPath', re.IGNORECASE)
     bik_re = re.compile("^game\.\w+Filename.+\.bik", re.IGNORECASE)
 
@@ -50,11 +61,15 @@ def gen_mod_init(c):
     biks = []
     for line in base_init_path.read_text().split('\n'):
         if mod_path_re.match(line) is not None:
+            logger.debug(f'found base mod {line}')
             paths.append(line)
         if bik_re.match(line) is not None:
+            logger.debug(f'found bik {line}')
             biks.append(line)
 
     init_path = c.pack_path / 'init.con'
+    logger.debug(f'write {init_path}')
+
     with open(init_path, 'w') as init:
         init.write(f'game.CustomGameName {c.mod.name}\n')
         init.write(f'game.addModPath Mods/{c.mod.name}/\n')
@@ -86,33 +101,71 @@ def find_targets(c):
 
     top_rfas = top_level_rfas(c.src_path)
     for directory in top_rfas:
-        targets.append(BuildTarget(c, directory.relative_to(c.src_path)))
+        target = BuildTarget(c, directory.relative_to(c.src_path))
+        targets.append(target)
 
     bf1942_path = c.src_path / 'bf1942'
     bf1942_rfas = [d for d in bf1942_path.iterdir() if d.is_dir() and d.name in BF1942_LEVEL_RFAS]
-    for src in bf1942_rfas:
-        targets.append(BuildTarget(c, directory.relative_to(c.src_path)))
+    for directory in bf1942_rfas:
+        target = BuildTarget(c, directory.relative_to(c.src_path))
+        targets.append(target)
 
     levels_path = bf1942_path / 'levels'
-    for src in [d for d in levels_path.iterdir() if d.is_dir()]:
-        targets.append(BuildTarget(c, directory.relative_to(c.src_path)))
+    for directory in [d for d in levels_path.iterdir() if d.is_dir()]:
+        target = BuildTarget(c, directory.relative_to(c.src_path))
+        targets.append(target)
 
-    c.build = { 'targets': targets }
+    for target in targets:
+        logger.info(f'found build target: {target}')
+
+    c.build = {
+        'targets': targets,
+        'out_of_date': None,
+        'all_up_to_date': None
+    }
 
 @task()
 def sync_targets(c):
+    logger.info('sync build targets')
+    logger.debug('start build targets sync')
+
     for target in c.build.targets:
+        logger.info(f'sync {target}')
         target.sync()
+
+        if target.up_to_date:
+            logger.info(f'{target} is up-to-date')
+        else:
+            logger.info(f'{target} is out-of-date')
+
+    logger.debug('end build targets sync')
+
+    c.build.out_of_date = [t for t in c.build.targets if not t.up_to_date]
+    c.build.all_up_to_date = len(c.build.out_of_date) == 0
+
+    if c.build.all_up_to_date:
+        logger.info('all build targets are up-to-date')
 
 @task()
 def pack_rfas(c):
+    if c.build.all_up_to_date:
+        return
+
+    logger.info('pack build targets')
+    logger.debug('start build targets pack')
+
     for target in [t for t in c.build.targets if not t.up_to_date]:
+        logger.debug(f'create RFA destination directory {target.rfa_file.parent}')
         target.rfa_file.parent.mkdir(parents=True, exist_ok=True)
 
         if target.rfa_file.exists():
+            logger.debug(f'delete existing RFA {target.rfa_file}')
             target.rfa_file.unlink()
 
+        logger.debug(f'run pack script for {target}')
         c.run(f'python3 {c.scripts.pack} {target.work_path} {target.rfa_file} -b {target.work_base_path}')
+
+    logger.debug('end build targets pack')
 
 # src -> build/src -> build/process (optional) -> build/pack
 # 1. sync changes from src to build/src
@@ -125,6 +178,11 @@ def build(c):
 
 @task(prepare_config)
 def clean(c):
+    logger.info('clean existing build files')
+
     c.build_path = c.project_root / c.build_dir
     if c.build_path.exists():
+        logger.debug(f'remove tree {c.build_path}')
         shutil.rmtree(c.build_path)
+    else:
+        logger.debug(f'{c.build_path} does not exist, nothing to do')

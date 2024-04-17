@@ -86,3 +86,6 @@ class BuildTarget:
         self.work_path = self._build_process_path
         self.work_base_path = self._c_build_path / 'process' / self.full_name
         self.processed = True
+
+    def __str__(self):
+        return self.full_name

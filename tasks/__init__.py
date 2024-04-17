@@ -23,6 +23,9 @@ ns.configure({
         'version': '0.1.0',
         'url': 'https://example.net'
     },
+    'logging': {
+        'level': 'info'
+    },
     'linux': {
         'wine_path': 'wine',
         'wine_prefix': ''
