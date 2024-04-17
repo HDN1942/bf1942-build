@@ -3,7 +3,7 @@ from pathlib import Path
 from tasks.sync import sync_dirs
 
 class BuildTarget:
-    full_name_re = re.compile('^([^_]+)(_\d{3})?$', re.IGNORECASE)
+    extension_re = re.compile('_\d{3}$')
 
     def __init__(self, c, path):
         '''Creates a BuildTarget instance.
@@ -25,11 +25,7 @@ class BuildTarget:
         Guadalcanal
         '''
 
-        match = self.full_name_re.match(self.full_name)
-        if not match:
-            raise ValueError(f'invalid path "{path}"')
-
-        self.name = match.group(1)
+        self.name = None
         '''Name of build target.
 
         Example:
@@ -37,12 +33,19 @@ class BuildTarget:
         texture
         Guadalcanal'''
 
-        self.extension = match.group(2)
+        self.extension = None
         '''Archive extension. Will be None if there is no extension.
 
         Example:
         _001
         _002'''
+
+        match = self.extension_re.search(self.full_name)
+        if match:
+            self.extension = match.group(0)
+            self.name = self.full_name.removesuffix(self.extension)
+        else:
+            self.name = self.full_name
 
         self.base_path = path.parent / self.name
         '''Base path within RFA.

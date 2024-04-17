@@ -76,18 +76,18 @@ class BuildTargetTest(unittest.TestCase):
         self.assertFalse(target.processed)
 
     def test_sets_data_attributes_guadalcanal(self):
-        target = BuildTarget(self.c, 'bf1942/levels/Guadalcanal')
+        target = BuildTarget(self.c, 'bf1942/levels/Gold_Beach-1944')
 
-        self.assertEqual('Guadalcanal', target.full_name)
-        self.assertEqual('Guadalcanal', target.name)
+        self.assertEqual('Gold_Beach-1944', target.full_name)
+        self.assertEqual('Gold_Beach-1944', target.name)
         self.assertIsNone(target.extension)
-        self.assertEqual(Path('bf1942/levels/Guadalcanal'), target.base_path)
-        self.assertEqual(self.c.src_path / 'bf1942' / 'levels' / 'Guadalcanal', target._src_path)
-        self.assertEqual(self.c.build_path / 'src' / 'Guadalcanal' / 'bf1942' / 'levels' / 'Guadalcanal', target._build_src_path)
-        self.assertEqual(self.c.build_path / 'process' / 'Guadalcanal' / 'bf1942' / 'levels' / 'Guadalcanal', target._build_process_path)
+        self.assertEqual(Path('bf1942/levels/Gold_Beach-1944'), target.base_path)
+        self.assertEqual(self.c.src_path / 'bf1942' / 'levels' / 'Gold_Beach-1944', target._src_path)
+        self.assertEqual(self.c.build_path / 'src' / 'Gold_Beach-1944' / 'bf1942' / 'levels' / 'Gold_Beach-1944', target._build_src_path)
+        self.assertEqual(self.c.build_path / 'process' / 'Gold_Beach-1944' / 'bf1942' / 'levels' / 'Gold_Beach-1944', target._build_process_path)
         self.assertEqual(target._build_src_path, target.work_path)
-        self.assertEqual(self.c.build_path / 'src' / 'Guadalcanal', target.work_base_path)
-        self.assertEqual(self.c.pack_path / 'Archives' / 'bf1942' / 'levels' / 'Guadalcanal.rfa', target.rfa_file)
+        self.assertEqual(self.c.build_path / 'src' / 'Gold_Beach-1944', target.work_base_path)
+        self.assertEqual(self.c.pack_path / 'Archives' / 'bf1942' / 'levels' / 'Gold_Beach-1944.rfa', target.rfa_file)
         self.assertIsNone(target.up_to_date)
         self.assertFalse(target.processed)
 
