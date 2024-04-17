@@ -6,6 +6,7 @@ from pathlib import Path
 from tasks.buildtarget import BuildTarget
 from tasks.config import prepare_config
 from tasks.process import process_files
+from tasks.sync import copyfile_if_changed
 
 logger = logging.getLogger(__name__)
 
@@ -47,11 +48,26 @@ def make_directories(c):
         logger.debug(f'create pack directory {c.pack_path}')
         c.pack_path.mkdir()
 
-@task
-def gen_mod_init(c):
-    # TODO don't generate if src/init.con exists
+def copy_existing_mod_init(c):
+    src_init_path = c.src_path / 'init.con'
+    pack_init_path = c.pack_path / 'init.con'
 
-    logger.info(f'generate mod init.con')
+    if src_init_path.exists():
+        logger.info(f'src/init.con exists, skip generate')
+
+        if copyfile_if_changed(src_init_path, pack_init_path):
+            logger.info(f'copy mod init.con')
+        else:
+            logger.info(f'mod init.con is up-to-date')
+
+        return True
+
+    return False
+
+@task()
+def gen_mod_init(c):
+    if copy_existing_mod_init(c):
+        return
 
     mod_path_re = re.compile('^game\.addModPath', re.IGNORECASE)
     bik_re = re.compile("^game\.\w+Filename.+\.bik", re.IGNORECASE)
@@ -67,7 +83,7 @@ def gen_mod_init(c):
             logger.debug(f'found bik {line}')
             biks.append(line)
 
-    init_path = c.pack_path / 'init.con'
+    init_path = c.build_path / 'init.con'
     logger.debug(f'write {init_path}')
 
     with open(init_path, 'w') as init:
@@ -83,6 +99,13 @@ def gen_mod_init(c):
 
         for line in biks:
             init.write(line + '\n')
+
+    pack_init_path = c.pack_path / 'init.con'
+
+    if copyfile_if_changed(init_path, pack_init_path):
+        logger.info(f'generate mod init.con')
+    else:
+        logger.info(f'mod init.con is up-to-date')
 
 def top_level_rfas(path):
     name_re = re.compile('^([^_]+)(_\d{3})?$', re.IGNORECASE)

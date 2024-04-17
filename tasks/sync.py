@@ -1,9 +1,30 @@
+import hashlib
 import logging
 import shutil
 from invoke import task, config
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+def compute_hash(file):
+    contents = Path(file).read_bytes()
+
+    sha256 = hashlib.sha256(contents, usedforsecurity=False)
+    return sha256.hexdigest()
+
+def copyfile_if_changed(src, dst):
+    if not Path(dst).exists():
+        shutil.copyfile(src, dst)
+        return True
+
+    src_hash = compute_hash(src)
+    dst_hash = compute_hash(dst)
+
+    if src_hash != dst_hash:
+        shutil.copyfile(src, dst)
+        return True
+
+    return False
 
 def sync_dirs(src, dst):
     '''Sync files from src to dst directory and return True if there were any changes.'''

@@ -21,8 +21,10 @@ def install(c, force=False):
 
         install_path.mkdir(parents=True)
 
-    sync_dirs(c.pack_path, install_path)
-    logger.info(f'installed {c.mod.name} to {install_path}')
+    if sync_dirs(c.pack_path, install_path):
+        logger.info(f'installed {c.mod.name} to {install_path}')
+    else:
+        logger.info(f'{c.mod.name} is up-to-date under {install_path}')
 
 @task(prepare_config)
 def uninstall(c):
