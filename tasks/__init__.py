@@ -1,13 +1,14 @@
 from invoke import Collection, task
 from .build import build, clean
-from .deploy import deploy
+from .install import install, uninstall
 from .launch import launch
 
 ns = Collection()
 
 ns.add_task(build)
 ns.add_task(clean)
-ns.add_task(deploy)
+ns.add_task(install)
+ns.add_task(uninstall)
 ns.add_task(launch)
 
 ns.configure({
