@@ -19,8 +19,6 @@ def install(c, force=False):
             logger.info(f'delete existing files from {install_path}')
             shutil.rmtree(install_path)
 
-        install_path.mkdir(parents=True)
-
     if sync_dirs(c.pack_path, install_path):
         logger.info(f'installed {c.mod.name} to {install_path}')
     else:

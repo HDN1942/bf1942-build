@@ -13,6 +13,13 @@ def compute_hash(file):
     return sha256.hexdigest()
 
 def copyfile_if_changed(src, dst):
+    '''Copy file if contents have changed.
+
+    Will not copy files with same content even if mtime is newer.
+
+    The dst argument may be a path to a file or directory.
+    '''
+
     src_path = Path(src)
     dst_path = Path(dst)
 
