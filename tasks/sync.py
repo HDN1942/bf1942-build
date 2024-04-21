@@ -13,6 +13,13 @@ def compute_hash(file):
     return sha256.hexdigest()
 
 def copyfile_if_changed(src, dst):
+    src_path = Path(src)
+    dst_path = Path(dst)
+
+    assert src_path.is_file()
+    assert dst_path.parent.is_dir()
+    assert not dst_path.exists() or dst_path.is_file()
+
     if not Path(dst).exists():
         shutil.copyfile(src, dst)
         return True
@@ -31,6 +38,8 @@ def sync_dirs(src, dst):
 
     src_path = Path(src)
     dst_path = Path(dst)
+
+    assert src_path.is_dir()
 
     changed = False
 
