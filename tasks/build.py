@@ -196,11 +196,15 @@ def pack_rfas(c):
 # 3. for each rfa, if src has changed, pack from build/src or build/process
 @task(prepare_config, make_directories, gen_mod_init, find_targets, sync_targets, process_files, pack_rfas)
 def build(c):
-    return
+    '''Build out-of-date archives.'''
+
     # TODO copy biks from parent mod where missing
+    pass
 
 @task(prepare_config)
 def clean(c):
+    '''Delete temporary build files.'''
+
     logger.info('clean existing build files')
 
     c.build_path = c.project_root / c.build_dir

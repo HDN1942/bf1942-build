@@ -1,0 +1,64 @@
+# The project root is normally the same directory containing the invoke.yaml
+# file, but may be changed.
+project_root:
+
+# The directory that will contain temporary build files. Anything in this
+# directory may be deleted at any time by the build system. This directory
+# should be added to .gitignore, if you're using git.
+build_dir: build
+
+# Settings specific to Battlefield 1942
+bf1942:
+
+    # The path to an installed copy of Battlefield 1942
+    path: C:\Program Files (x86)\EA Games\Battlefield 1942
+
+# Settings for the mod being built
+mod:
+
+    # The name of the mod as it will appear in the Battlefield 1942 mods
+    # directory and in-game menu if you are not using a custom init.con.
+    name: MyMod
+
+    # Base mod for this mod. The generated init.con will have the complete
+    # chain of base mods automatically included.
+    base: bf1942
+
+    # Version string, can be in any format. The default value is an example of
+    # semantic versioning (https://semver.org/). You should increment this
+    # every time you release a new version of your mod. Only used in the
+    # generated init.con.
+    version: 0.1.0
+
+    # URL for your mod as it appears in the in-game menu. Only used in the
+    # generated init.con.
+    url: https://example.net
+
+# Settings controlling the build system's logging facility
+logging:
+
+    # Logging level controls how much log information is produce when a task is
+    # run. May be one of debug, info, warning, error, critical.
+    level: info
+
+# Settings specific to Linux
+linux:
+    # Path to Wine binary to use when running Windows exes (ie. BF1942.exe).
+    wine_path: wine
+
+    # Optional Wine prefix to use when running Wine.
+    wine_prefix:
+
+# Settings for processors
+processors:
+
+    # Settings for the sound processor
+    sound:
+
+        # Whether to generate 11.025 kHz files. This can be disabled to reduce the
+        # final size of your mod.
+        generate_11khz: True
+
+        # Whether to generate 22.05 kHz files. This can be disabled to reduce the
+        # final size of your mod.
+        generate_22khz: True
